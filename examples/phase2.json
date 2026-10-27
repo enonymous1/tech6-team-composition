@@ -1,0 +1,82 @@
+{
+  "project_info": {
+    "name": "Phase 2 Example",
+    "titles": [
+      "Section 3. Technical Proposal – Standard Forms",
+      "FORM TECH-6 (FOR FTP AND STP)",
+      "TEAM COMPOSITION, ASSIGNMENT, AND KEY EXPERTS’ INPUTS (PHASE 2)"
+    ],
+    "sheet_name": "Team Input Phase 2",
+    "output_filename": "tech6_phase2_example.xlsx"
+  },
+  "settings": {
+    "validation_threshold": 12,
+    "deliverable_labels": [
+      "D-1",
+      "D-2",
+      "D-3"
+    ]
+  },
+  "sections": [
+    {
+      "header": "KEY EXPERTS",
+      "experts": [
+        {
+          "n": "K-1",
+          "name": "Jane Q. Expert",
+          "position": "Project Manager",
+          "h_in": [
+            "[2 month]",
+            "[1.0]",
+            "[1.0]"
+          ],
+          "f_in": [
+            "[0.5 m]",
+            "[2.5]",
+            "[0]"
+          ]
+        },
+        {
+          "n": "K-2",
+          "name": "",
+          "position": "Business Process Optimization Expert (Lead)"
+        },
+        {
+          "n": "K-3",
+          "name": "",
+          "position": "Technology Lead"
+        }
+      ]
+    },
+    {
+      "header": "NON-KEY EXPERTS",
+      "experts": [
+        {
+          "n": "N-1",
+          "name": "",
+          "position": "Project Secretariat"
+        }
+      ]
+    }
+  ],
+  "deliverable_details": [
+    {
+      "id": "D-1",
+      "title": "Phase II Inception Report",
+      "subtitle": "Week 2",
+      "subtext": "Methodology, work plan, and mobilization for phase two."
+    },
+    {
+      "id": "D-2",
+      "title": "Quarterly Progress Reports",
+      "subtitle": "Quarterly",
+      "subtext": "Progress reporting for phase two."
+    },
+    {
+      "id": "D-3",
+      "title": "Implementation Closure Report",
+      "subtitle": "Week 26",
+      "subtext": "Closure report, findings, and handover documentation."
+    }
+  ]
+}

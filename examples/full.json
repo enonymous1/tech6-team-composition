@@ -1,0 +1,356 @@
+{
+  "project_info": {
+    "name": "Full TECH-6 Example",
+    "titles": [
+      "Section 3. Technical Proposal – Standard Forms",
+      "FORM TECH-6 (FOR FTP AND STP)",
+      "TEAM COMPOSITION, ASSIGNMENT, AND KEY EXPERTS’ INPUTS"
+    ],
+    "sheet_name": "Standard Reference",
+    "output_filename": "tech6_full_example.xlsx"
+  },
+  "settings": {
+    "validation_threshold": 6,
+    "deliverable_labels": [
+      "D-1",
+      "D-2",
+      "D-3",
+      "D-4",
+      "D-5",
+      "D-6",
+      "D-7"
+    ]
+  },
+  "sections": [
+    {
+      "header": "KEY EXPERTS",
+      "experts": [
+        {
+          "n": "K-1",
+          "name": "Jane Q. Expert",
+          "position": "Project Manager",
+          "h_in": [
+            "[2 month]",
+            "[1.0]",
+            "[1.0]",
+            "",
+            "",
+            "",
+            ""
+          ],
+          "f_in": [
+            "[0.5 m]",
+            "[2.5]",
+            "",
+            "",
+            "",
+            "",
+            ""
+          ]
+        },
+        {
+          "n": "K-2",
+          "name": "",
+          "position": "Business Process Optimization Expert (Lead)",
+          "h_in": [
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            ""
+          ],
+          "f_in": [
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            ""
+          ]
+        },
+        {
+          "n": "K-3",
+          "name": "",
+          "position": "Business Process Optimization Expert",
+          "h_in": [
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            ""
+          ],
+          "f_in": [
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            ""
+          ]
+        },
+        {
+          "n": "K-4",
+          "name": "",
+          "position": "Business Analyst",
+          "h_in": [
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            ""
+          ],
+          "f_in": [
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            ""
+          ]
+        },
+        {
+          "n": "K-5",
+          "name": "",
+          "position": "Business Analyst",
+          "h_in": [
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            ""
+          ],
+          "f_in": [
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            ""
+          ]
+        },
+        {
+          "n": "K-6",
+          "name": "",
+          "position": "Business Analyst",
+          "h_in": [
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            ""
+          ],
+          "f_in": [
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            ""
+          ]
+        },
+        {
+          "n": "K-7",
+          "name": "",
+          "position": "Solutions Architect",
+          "h_in": [
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            ""
+          ],
+          "f_in": [
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            ""
+          ]
+        },
+        {
+          "n": "K-8",
+          "name": "",
+          "position": "Technology Lead",
+          "h_in": [
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            ""
+          ],
+          "f_in": [
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            ""
+          ]
+        },
+        {
+          "n": "K-9",
+          "name": "",
+          "position": "Information Security Expert",
+          "h_in": [
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            ""
+          ],
+          "f_in": [
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            ""
+          ]
+        },
+        {
+          "n": "K-10",
+          "name": "",
+          "position": "Data Engineer",
+          "h_in": [
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            ""
+          ],
+          "f_in": [
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            ""
+          ]
+        }
+      ]
+    },
+    {
+      "header": "NON-KEY EXPERTS",
+      "experts": [
+        {
+          "n": "N-1",
+          "name": "",
+          "position": "International Short-Term Technical Specialist (E-Governance Platform/Interoperability)",
+          "h_in": [
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            ""
+          ],
+          "f_in": [
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            ""
+          ]
+        },
+        {
+          "n": "N-2",
+          "name": "",
+          "position": "Legal and Regulatory Expert (Tax Lawyer)",
+          "h_in": [
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            ""
+          ],
+          "f_in": [
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            ""
+          ]
+        }
+      ]
+    }
+  ],
+  "deliverable_details": [
+    {
+      "id": "D-1",
+      "title": "Inception Report",
+      "subtitle": "Week 2",
+      "subtext": "Methodology, work plan, stakeholder meetings, and mobilization."
+    },
+    {
+      "id": "D-2",
+      "title": "Requirements and System Specifications",
+      "subtitle": "Week 6",
+      "subtext": "Business requirements and system specification documents."
+    },
+    {
+      "id": "D-3",
+      "title": "Capacity Needs Assessment Report",
+      "subtitle": "Week 10",
+      "subtext": "Staff capacity needs assessment report."
+    },
+    {
+      "id": "D-4",
+      "title": "Solution Design and Architecture",
+      "subtitle": "Week 14",
+      "subtext": "Solution, data platform, and infrastructure design and architecture."
+    },
+    {
+      "id": "D-5",
+      "title": "Technical Specifications and Bidding Documents",
+      "subtitle": "Week 18",
+      "subtext": "Technical specifications and request for bids."
+    },
+    {
+      "id": "D-6",
+      "title": "Progress Reports",
+      "subtitle": "Week 22",
+      "subtext": "Phase progress reports."
+    },
+    {
+      "id": "D-7",
+      "title": "Final Report",
+      "subtitle": "Week 26",
+      "subtext": "Findings, recommendations, and handover documentation."
+    }
+  ]
+}

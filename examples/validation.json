@@ -1,0 +1,148 @@
+{
+  "project_info": {
+    "name": "Validation Example",
+    "titles": [
+      "Section 3. Technical Proposal – Standard Forms",
+      "FORM TECH-6 (FOR FTP AND STP)",
+      "TEAM COMPOSITION, ASSIGNMENT, AND KEY EXPERTS’ INPUTS"
+    ],
+    "sheet_name": "Validation Test",
+    "output_filename": "tech6_validation_example.xlsx"
+  },
+  "settings": {
+    "validation_threshold": 6,
+    "deliverable_labels": [
+      "D-1",
+      "D-2",
+      "D-3",
+      "D-4"
+    ],
+    "time_input_requirements": {
+      "total_minimum_months": 13.5,
+      "field_minimum_months": 7.5
+    }
+  },
+  "sections": [
+    {
+      "header": "KEY EXPERTS",
+      "experts": [
+        {
+          "n": "K-1",
+          "name": "Mr. Team Leader",
+          "position": "Team Leader",
+          "h_in": [
+            "0.5",
+            "0.5",
+            "0",
+            ""
+          ],
+          "f_in": [
+            "0.5",
+            "0.5",
+            "0.1",
+            ""
+          ],
+          "total_required_input": "2.0 (1.0 Field / 1.0 Remote)"
+        },
+        {
+          "n": "K-2",
+          "name": "Ms. Architect",
+          "position": "System Architect",
+          "h_in": [
+            "0.5",
+            "0",
+            "0",
+            ""
+          ],
+          "f_in": [
+            "0.5",
+            "0.5",
+            "0",
+            ""
+          ],
+          "total_required_input": "2.0 (1.5 Field / 0.5 Remote)"
+        },
+        {
+          "n": "K-3",
+          "name": "Mr. Analyst",
+          "position": "Business Analyst",
+          "h_in": [
+            "1.0",
+            "0",
+            "0",
+            ""
+          ],
+          "f_in": [
+            "1.0",
+            "0",
+            "0",
+            ""
+          ],
+          "total_required_input": "2.0"
+        },
+        {
+          "n": "K-4",
+          "name": "Dr. Lawyer",
+          "position": "Legal Specialist",
+          "h_in": [
+            "0.5",
+            "0",
+            "0",
+            ""
+          ],
+          "f_in": [
+            "0.5",
+            "0",
+            "0",
+            ""
+          ],
+          "total_required_input": "1.5 (0.5 Field / 1.0 Remote)"
+        },
+        {
+          "n": "K-5",
+          "name": "Ms. Org",
+          "position": "Organizational Specialist",
+          "h_in": [
+            "1.0",
+            "0.5",
+            "0",
+            ""
+          ],
+          "f_in": [
+            "0.5",
+            "0.5",
+            "0",
+            ""
+          ],
+          "total_required_input": "2.0"
+        }
+      ]
+    }
+  ],
+  "deliverable_details": [
+    {
+      "id": "D-1",
+      "title": "Inception Report",
+      "subtitle": "Week 2",
+      "subtext": "Methodology, work plan, stakeholder meetings, and mobilization."
+    },
+    {
+      "id": "D-2",
+      "title": "1st Interim Report",
+      "subtitle": "Week 10",
+      "subtext": "Assessment findings and options comparison."
+    },
+    {
+      "id": "D-3",
+      "title": "2nd Interim Report",
+      "subtitle": "Week 20",
+      "subtext": "Review of objectives, mapping, and conceptual model design."
+    },
+    {
+      "id": "D-4",
+      "title": "Final Report",
+      "subtitle": "Week 35",
+      "subtext": "Detailed specifications, cost estimates, and draft bidding documents."
+    }
+  ]
+}

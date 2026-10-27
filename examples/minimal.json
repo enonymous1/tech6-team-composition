@@ -1,0 +1,60 @@
+{
+  "deliverable_details": [
+    {
+      "id": "D-1",
+      "subtext": "Methodology, work plan, stakeholder meetings, and mobilization.",
+      "subtitle": "Week 2",
+      "title": "Inception Report"
+    }
+  ],
+  "project_info": {
+    "name": "Minimal TECH-6 Example",
+    "output_filename": "tech6_minimal_example.xlsx",
+    "sheet_name": "Team Input",
+    "titles": [
+      "Section 3. Technical Proposal – Standard Forms",
+      "FORM TECH-6 (FOR FTP AND STP)",
+      "TEAM COMPOSITION, ASSIGNMENT, AND KEY EXPERTS’ INPUTS"
+    ]
+  },
+  "sections": [
+    {
+      "experts": [
+        {
+          "f_in": [
+            "0"
+          ],
+          "h_in": [
+            "0"
+          ],
+          "n": "K-1",
+          "name": "Jane Q. Expert",
+          "position": "Team Leader"
+        }
+      ],
+      "header": "KEY EXPERTS"
+    },
+    {
+      "experts": [
+        {
+          "f_in": [
+            "0"
+          ],
+          "h_in": [
+            "0"
+          ],
+          "n": "N-1",
+          "name": "",
+          "position": "Position Title"
+        }
+      ],
+      "header": "NON-KEY EXPERTS"
+    }
+  ],
+  "settings": {
+    "deliverable_labels": [
+      "D-1"
+    ],
+    "validation_threshold": 6
+  }
+}

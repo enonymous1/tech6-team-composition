@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tech6-team-composition"
+version = "2.0.0"
+description = "Generate World Bank FORM TECH-6 Excel workbooks (team composition and key experts' inputs) from JSON configs, and format qualifications summary matrices."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "enonymous1" }]
+keywords = ["tech-6", "excel", "openpyxl", "xlsxwriter", "document-generation", "cli"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "openpyxl>=3.1",
+    "XlsxWriter>=3.2",
+    "python-docx>=1.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "ruff>=0.6",
+    "mypy>=1.10",
+    "types-openpyxl>=3.1",
+]
+
+[project.scripts]
+tech6-team-composition = "tech6_team_composition.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/enonymous1/tech6-team-composition"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module = "xlsxwriter.*"
+ignore_missing_imports = true

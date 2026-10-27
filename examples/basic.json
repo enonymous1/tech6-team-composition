@@ -1,0 +1,195 @@
+{
+  "deliverable_details": [
+    {
+      "id": "D-1",
+      "subtext": "Methodology, work plan, stakeholder meetings, and mobilization.",
+      "subtitle": "Week 2",
+      "title": "Inception Report"
+    },
+    {
+      "id": "D-2",
+      "subtext": "Example deliverable description.",
+      "subtitle": "Week 6",
+      "title": "Deliverable 2"
+    },
+    {
+      "id": "D-3",
+      "subtext": "Example deliverable description.",
+      "subtitle": "Week 10",
+      "title": "Deliverable 3"
+    },
+    {
+      "id": "D-4",
+      "subtext": "Example deliverable description.",
+      "subtitle": "Week 14",
+      "title": "Deliverable 4"
+    },
+    {
+      "id": "D-5",
+      "subtext": "Example deliverable description.",
+      "subtitle": "Week 18",
+      "title": "Deliverable 5"
+    },
+    {
+      "id": "D-6",
+      "subtext": "Example deliverable description.",
+      "subtitle": "Week 22",
+      "title": "Deliverable 6"
+    },
+    {
+      "id": "D-7",
+      "subtext": "Findings, recommendations, and handover documentation.",
+      "subtitle": "Week 26",
+      "title": "Final Report"
+    }
+  ],
+  "project_info": {
+    "name": "Basic TECH-6 Example",
+    "output_filename": "tech6_basic_example.xlsx",
+    "sheet_name": "Team Input",
+    "titles": [
+      "Section 3. Technical Proposal – Standard Forms",
+      "FORM TECH-6 (FOR FTP AND STP)",
+      "TEAM COMPOSITION, ASSIGNMENT, AND KEY EXPERTS’ INPUTS"
+    ]
+  },
+  "sections": [
+    {
+      "experts": [
+        {
+          "f_in": [
+            "0",
+            "0",
+            "0",
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "h_in": [
+            "0",
+            "0",
+            "0",
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "n": "K-1",
+          "name": "Jane Q. Expert",
+          "position": "Team Leader"
+        },
+        {
+          "f_in": [
+            "0",
+            "0",
+            "0",
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "h_in": [
+            "0",
+            "0",
+            "0",
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "n": "K-2",
+          "name": "",
+          "position": "Position Title"
+        },
+        {
+          "f_in": [
+            "0",
+            "0",
+            "0",
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "h_in": [
+            "0",
+            "0",
+            "0",
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "n": "K-3",
+          "name": "",
+          "position": "Position Title"
+        }
+      ],
+      "header": "KEY EXPERTS"
+    },
+    {
+      "experts": [
+        {
+          "f_in": [
+            "0",
+            "0",
+            "0",
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "h_in": [
+            "0",
+            "0",
+            "0",
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "n": "N-1",
+          "name": "",
+          "position": "Position Title"
+        },
+        {
+          "f_in": [
+            "0",
+            "0",
+            "0",
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "h_in": [
+            "0",
+            "0",
+            "0",
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "n": "N-2",
+          "name": "",
+          "position": "Position Title"
+        }
+      ],
+      "header": "NON-KEY EXPERTS"
+    }
+  ],
+  "settings": {
+    "deliverable_labels": [
+      "D-1",
+      "D-2",
+      "D-3",
+      "D-4",
+      "D-5",
+      "D-6",
+      "D-7"
+    ],
+    "validation_threshold": 6
+  }
+}
