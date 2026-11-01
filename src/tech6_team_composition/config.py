@@ -12,6 +12,7 @@ a clear error instead of being silently honoured or silently ignored.
 from __future__ import annotations
 
 import json
+import math
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -39,10 +40,18 @@ class Expert:
     total_required_input: str | None = None
 
 
+# The section whose experts fall back to the section validation threshold
+# when they have no individual requirement. Compared case-insensitively
+# at load time (see parse_config): a config headed "Key Experts" must not
+# silently lose its section check because of capitalisation.
+KEY_EXPERTS_HEADER = "KEY EXPERTS"
+
+
 @dataclass(frozen=True)
 class Section:
     header: str
     experts: tuple[Expert, ...]
+    is_key_experts: bool = False
 
 
 @dataclass(frozen=True)
@@ -102,6 +111,8 @@ def _optional_number(mapping: dict[str, Any], key: str) -> float | None:
         return None
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise ConfigError(f"{key!r} must be a number, got {value!r}")
+    if not math.isfinite(value):
+        raise ConfigError(f"{key!r} must be a finite number, got {value!r}")
     return float(value)
 
 
@@ -118,6 +129,15 @@ def _str_list(mapping: dict[str, Any], key: str, what: str) -> tuple[str, ...]:
 
 
 def _input_list(mapping: dict[str, Any], key: str, label_count: int, what: str) -> tuple[Any, ...]:
+    """Validate one expert's home/field input list.
+
+    Entries must be strings, numbers, or null. Anything else — booleans,
+    objects, nested lists — used to reach the generator, where it was
+    stringified into text that Excel's ``SUM`` silently ignores, so the
+    expert's total came out low with no warning. Numbers must be finite
+    and non-negative: months of input cannot be negative, and a negative
+    input would silently reduce a total instead of flagging an error.
+    """
     value = mapping.get(key)
     if value is None:
         return ()
@@ -128,7 +148,41 @@ def _input_list(mapping: dict[str, Any], key: str, label_count: int, what: str) 
             f"{what} {key!r} has {len(value)} entries but there are "
             f"{label_count} deliverable labels; lengths must match"
         )
+    for index, item in enumerate(value):
+        if isinstance(item, bool) or not isinstance(item, (str, int, float, type(None))):
+            raise ConfigError(f"{what} {key!r}[{index}] must be a string, number, or null, got {item!r}")
+        if isinstance(item, (int, float)):
+            if not math.isfinite(item):
+                raise ConfigError(f"{what} {key!r}[{index}] must be finite, got {item!r}")
+            if item < 0:
+                raise ConfigError(f"{what} {key!r}[{index}] must not be negative, got {item!r}")
     return tuple(value)
+
+
+def _check_duplicates(items: list[str], what: str) -> None:
+    seen: set[str] = set()
+    for item in items:
+        if item in seen:
+            raise ConfigError(f"Duplicate {what}: {item!r}")
+        seen.add(item)
+
+
+_SHEET_NAME_FORBIDDEN = set("[]:*?/\\")
+
+
+def _validate_sheet_name(sheet_name: str) -> None:
+    """Reject sheet names Excel (and openpyxl) cannot build.
+
+    Previously this surfaced only at generation time, as an openpyxl
+    ``ValueError`` traceback, so ``validate`` passed configs that
+    ``generate`` then rejected. Checking here makes the failure a
+    clean config error at load time.
+    """
+    if len(sheet_name) > 31:
+        raise ConfigError(f"project_info sheet_name must be at most 31 characters, got {len(sheet_name)}")
+    bad = sorted(set(sheet_name) & _SHEET_NAME_FORBIDDEN)
+    if bad:
+        raise ConfigError(f"project_info sheet_name must not contain any of {bad}, got {sheet_name!r}")
 
 
 def load_config(path: str | Path) -> Tech6Config:
@@ -137,7 +191,13 @@ def load_config(path: str | Path) -> Tech6Config:
     if not config_path.exists():
         raise ConfigError(f"Config file not found: {config_path}")
     try:
-        raw = json.loads(config_path.read_text(encoding="utf-8"))
+        text = config_path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise ConfigError(f"Could not read config file: {config_path}: {exc}") from exc
+    except UnicodeDecodeError as exc:
+        raise ConfigError(f"Config file is not valid UTF-8: {config_path}: {exc}") from exc
+    try:
+        raw = json.loads(text)
     except json.JSONDecodeError as exc:
         raise ConfigError(f"Config file is not valid JSON: {config_path}: {exc}") from exc
     return parse_config(raw, source_path=config_path)
@@ -155,10 +215,12 @@ def parse_config(raw: Any, source_path: Path | None = None) -> Tech6Config:
         )
 
     project_raw = _require_mapping(data.get("project_info"), "project_info")
+    sheet_name = _require_str(project_raw, "sheet_name", "project_info")
+    _validate_sheet_name(sheet_name)
     project_info = ProjectInfo(
         name=_require_str(project_raw, "name", "project_info"),
         titles=_str_list(project_raw, "titles", "project_info"),
-        sheet_name=_require_str(project_raw, "sheet_name", "project_info"),
+        sheet_name=sheet_name,
         output_filename=_require_str(project_raw, "output_filename", "project_info"),
         client=_optional_str(project_raw, "client"),
         rfp_reference=_optional_str(project_raw, "rfp_reference"),
@@ -170,23 +232,38 @@ def parse_config(raw: Any, source_path: Path | None = None) -> Tech6Config:
 
     settings_raw = _require_mapping(data.get("settings"), "settings")
     labels = _str_list(settings_raw, "deliverable_labels", "settings")
+    _check_duplicates(list(labels), "deliverable label")
     threshold = _optional_number(settings_raw, "validation_threshold")
     requirements_raw = settings_raw.get("time_input_requirements")
     if requirements_raw is None:
         requirements_raw = {}
     requirements = _require_mapping(requirements_raw, "time_input_requirements")
+    total_min = _optional_number(requirements, "total_minimum_months")
+    field_min = _optional_number(requirements, "field_minimum_months")
+    home_min = _optional_number(requirements, "home_minimum_months")
+    for key, minimum in (
+        ("validation_threshold", threshold),
+        ("total_minimum_months", total_min),
+        ("field_minimum_months", field_min),
+        ("home_minimum_months", home_min),
+    ):
+        # A negative minimum makes its check vacuously pass (no total
+        # can fall below it), which is worse than having no check.
+        if minimum is not None and minimum < 0:
+            raise ConfigError(f"settings {key!r} must not be negative, got {minimum!r}")
     settings = Settings(
         deliverable_labels=labels,
         validation_threshold=6.0 if threshold is None else threshold,
-        total_minimum_months=_optional_number(requirements, "total_minimum_months"),
-        field_minimum_months=_optional_number(requirements, "field_minimum_months"),
-        home_minimum_months=_optional_number(requirements, "home_minimum_months"),
+        total_minimum_months=total_min,
+        field_minimum_months=field_min,
+        home_minimum_months=home_min,
     )
 
     sections_raw = data.get("sections")
     if not isinstance(sections_raw, list) or not sections_raw:
         raise ConfigError("Config requires a non-empty list 'sections'")
     sections: list[Section] = []
+    expert_numbers: list[str] = []
     for index, section_raw in enumerate(sections_raw):
         section_map = _require_mapping(section_raw, f"sections[{index}]")
         header = _require_str(section_map, "header", f"sections[{index}]")
@@ -197,19 +274,28 @@ def parse_config(raw: Any, source_path: Path | None = None) -> Tech6Config:
         for expert_index, expert_raw in enumerate(experts_raw):
             expert_map = _require_mapping(expert_raw, f"sections[{index}].experts[{expert_index}]")
             what = f"sections[{index}].experts[{expert_index}]"
+            # A blank name is allowed: the bundled examples use blank
+            # names for placeholder experts. A non-string name is not.
+            name = _optional_str(expert_map, "name")
             experts.append(
                 Expert(
                     n=_require_str(expert_map, "n", what),
-                    name=expert_map.get("name", ""),
+                    name="" if name is None else name,
                     position=_require_str(expert_map, "position", what),
                     h_in=_input_list(expert_map, "h_in", len(labels), what),
                     f_in=_input_list(expert_map, "f_in", len(labels), what),
                     total_required_input=_optional_str(expert_map, "total_required_input"),
                 )
             )
-            if not isinstance(experts[-1].name, str):
-                raise ConfigError(f"{what} 'name' must be a string")
-        sections.append(Section(header=header, experts=tuple(experts)))
+            expert_numbers.append(experts[-1].n)
+        sections.append(
+            Section(
+                header=header,
+                experts=tuple(experts),
+                is_key_experts=header.strip().upper() == KEY_EXPERTS_HEADER,
+            )
+        )
+    _check_duplicates(expert_numbers, "expert number")
 
     deliverables_raw = data.get("deliverable_details")
     if not isinstance(deliverables_raw, list) or not deliverables_raw:
@@ -218,17 +304,30 @@ def parse_config(raw: Any, source_path: Path | None = None) -> Tech6Config:
     for index, deliverable_raw in enumerate(deliverables_raw):
         deliverable_map = _require_mapping(deliverable_raw, f"deliverable_details[{index}]")
         what = f"deliverable_details[{index}]"
+        subtitle = _optional_str(deliverable_map, "subtitle")
+        subtext = _optional_str(deliverable_map, "subtext")
         deliverables.append(
             Deliverable(
                 id=_require_str(deliverable_map, "id", what),
                 title=_require_str(deliverable_map, "title", what),
-                subtitle=deliverable_map.get("subtitle", ""),
-                subtext=deliverable_map.get("subtext", ""),
+                subtitle="" if subtitle is None else subtitle,
+                subtext="" if subtext is None else subtext,
             )
         )
-        for field_name in ("subtitle", "subtext"):
-            if not isinstance(getattr(deliverables[-1], field_name), str):
-                raise ConfigError(f"{what} {field_name!r} must be a string")
+    # The legend and the input columns describe the same deliverables:
+    # a detail entry must exist for every label, in the same order, or
+    # the table gains a column with no legend entry (or vice versa).
+    if len(deliverables) != len(labels):
+        raise ConfigError(
+            f"deliverable_details has {len(deliverables)} entries but there are "
+            f"{len(labels)} deliverable labels; counts must match"
+        )
+    for index, (deliverable, label) in enumerate(zip(deliverables, labels)):
+        if deliverable.id != label:
+            raise ConfigError(
+                f"deliverable_details[{index}].id {deliverable.id!r} does not match "
+                f"deliverable_labels[{index}] {label!r}"
+            )
 
     output_directory = data.get("output_directory")
     if output_directory is not None and not isinstance(output_directory, str):

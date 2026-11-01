@@ -132,3 +132,40 @@ def test_bundled_example_files_are_fictional(examples_dir):
     assert ws is not None
     names = [ws.cell(row=r, column=2).value for r in range(2, ws.max_row + 1)]
     assert names == ["Jane Q. Expert", "Alex Example", "Sam Sample"]
+
+
+def test_write_matrix_preserves_numbers_dates_and_zero(tmp_path):
+    import datetime
+
+    path = tmp_path / "types.xlsx"
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    assert ws is not None
+    ws.append(["Position", "Name", "Total Input", "Start Date", "Zero Input"])
+    ws.append(["K-1", "Jane Q. Expert", 2.5, datetime.date(2024, 1, 15), 0])
+    wb.save(path)
+    rows = extract_matrix_data(path, {})
+    out = tmp_path / "typed.xlsx"
+    write_matrix(rows, out)
+    out_ws = openpyxl.load_workbook(out).active
+    assert out_ws is not None
+    assert out_ws["C2"].value == 2.5
+    assert isinstance(out_ws["C2"].value, float)
+    assert out_ws["D2"].value == datetime.datetime(2024, 1, 15)
+    assert out_ws["E2"].value == 0
+
+
+def test_extract_missing_sheet_raises_value_error(tmp_path):
+    source = _matrix_workbook(tmp_path)
+    with pytest.raises(ValueError, match="not found"):
+        extract_matrix_data(source, {}, sheet_name="Nope")
+
+
+def test_get_bold_map_single_column_raises(tmp_path):
+    path = tmp_path / "onecol.docx"
+    doc = Document()
+    table = doc.add_table(rows=2, cols=1)
+    table.rows[1].cells[0].text = "x"
+    doc.save(path)
+    with pytest.raises(ValueError, match="fewer than 2"):
+        get_bold_map(path)

@@ -51,7 +51,7 @@ def _cmd_generate(args: argparse.Namespace) -> int:
     try:
         generator = Tech6Generator.from_config_file(args.config)
         out_path = generator.generate(output_dir=args.output_dir, output_filename=args.output_name)
-    except (ConfigError, FileNotFoundError) as exc:
+    except (ConfigError, FileNotFoundError, OSError, ValueError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 2
     print(f"Generated: {out_path}")
@@ -61,7 +61,11 @@ def _cmd_generate(args: argparse.Namespace) -> int:
 def _cmd_validate(args: argparse.Namespace) -> int:
     try:
         config = load_config(args.config)
-    except (ConfigError, FileNotFoundError) as exc:
+        # Build the workbook in memory, without writing it. A schema
+        # check alone used to pass configs that generate then
+        # rejected, so "Valid" now means "will generate".
+        Tech6Generator(config).build_workbook()
+    except (ConfigError, FileNotFoundError, OSError, ValueError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 2
     expert_count = sum(len(s.experts) for s in config.sections)
@@ -73,6 +77,16 @@ def _cmd_validate(args: argparse.Namespace) -> int:
 
 
 def _cmd_format_matrix(args: argparse.Namespace) -> int:
+    # Check inputs before creating anything: previously the output
+    # directory was created first, so a missing input still left an
+    # empty directory behind.
+    for input_path in args.inputs:
+        if not Path(input_path).exists():
+            print(f"Error: Source workbook not found: {input_path}", file=sys.stderr)
+            return 2
+    if args.docx is not None and not Path(args.docx).exists():
+        print(f"Error: Reference document not found: {args.docx}", file=sys.stderr)
+        return 2
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     for input_path in args.inputs:
@@ -80,19 +94,41 @@ def _cmd_format_matrix(args: argparse.Namespace) -> int:
         out_path = output_dir / f"{source.stem}_Formatted.xlsx"
         try:
             result = format_matrix(source, out_path, docx_path=args.docx, sheet_name=args.sheet)
-        except (FileNotFoundError, ValueError) as exc:
+        except (FileNotFoundError, KeyError, OSError, ValueError) as exc:
             print(f"Error: {exc}", file=sys.stderr)
             return 2
         print(f"Formatted: {result}")
     return 0
 
 
+def _default_configs_dir() -> Path:
+    """Find the bundled examples, if they are installed with the package.
+
+    In a checkout they sit at the repository root, next to ``src/``.
+    A wheel install does not ship them (they are not package data), so
+    when neither location exists the caller reports that plainly and
+    asks for ``--configs-dir`` instead of failing on a nonsense path.
+    """
+    try:
+        from importlib import resources
+
+        packaged = resources.files("tech6_team_composition") / "examples"
+        if packaged.is_dir():
+            return Path(str(packaged))
+    except (ImportError, OSError, TypeError):
+        pass
+    return Path(__file__).resolve().parent.parent.parent / "examples"
+
+
 def _cmd_menu(args: argparse.Namespace) -> int:
-    configs_dir = (
-        Path(args.configs_dir) if args.configs_dir else Path(__file__).resolve().parent.parent.parent / "examples"
-    )
+    configs_dir = Path(args.configs_dir) if args.configs_dir else _default_configs_dir()
     if not configs_dir.exists():
-        print(f"Error: configs directory not found: {configs_dir}", file=sys.stderr)
+        print(
+            f"Error: configs directory not found: {configs_dir}. "
+            "Bundled examples are not installed with the package; "
+            "run from a repository checkout or pass --configs-dir.",
+            file=sys.stderr,
+        )
         return 2
     config_files = sorted(configs_dir.rglob("*.json"))
     if not config_files:
@@ -118,7 +154,7 @@ def _cmd_menu(args: argparse.Namespace) -> int:
                 generator = Tech6Generator.from_config_file(selected)
                 out_path = generator.generate(output_dir=args.output_dir)
                 print(f"Generated: {out_path}")
-            except (ConfigError, FileNotFoundError) as exc:
+            except (ConfigError, FileNotFoundError, OSError, ValueError) as exc:
                 print(f"Error: {exc}", file=sys.stderr)
             cont = input("Run another? (y/n): ").strip().lower()
             if cont != "y":

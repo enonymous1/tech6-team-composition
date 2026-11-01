@@ -1,5 +1,68 @@
 # Changelog
 
+## [2.1.0] - 2026-10-31
+
+Staff-review fixes (P0/P1 from the 2026-10-31 review). No new features;
+P2 items from the review (theme module, `%g` threshold formatting,
+`operator` parameter, `"[PG. #]"` placeholder, single-source version,
+ruff/mypy strictness) are deliberately not in this release.
+
+### Fixed
+
+- **`--output-name` can no longer overwrite the config file.** The
+  filename override is now applied before the overwrite check instead
+  of after it, so generating with an output name equal to the config
+  file's name is refused like any other overwrite attempt.
+- **`format-matrix` preserves numbers, dates, and zero.** Source cells
+  holding numbers or dates used to come back as text (and a numeric 0
+  collapsed to a blank cell), so downstream `SUM`s silently ignored
+  them. They now keep their type; only text cells go through the
+  rich-text path.
+- **Clean CLI errors instead of tracebacks** for an invalid Excel
+  sheet name, a directory passed as a config, a non-UTF-8 config, a
+  missing worksheet on `format-matrix`, and a reference document
+  table with fewer than two columns. The CLI now catches
+  `OSError`/`ValueError` alongside `ConfigError`/`FileNotFoundError`
+  and exits 2 with `Error: …`.
+- **Silent undercounting inputs are rejected or handled.** Boolean,
+  object, and nested-list entries in `h_in`/`f_in` are rejected at
+  load (they used to stringify into text `SUM` ignores); negative and
+  non-finite inputs, thresholds, and minimums are rejected; and
+  `"1,000"` now parses as 1000.0 instead of 1.0.
+- **Config consistency is checked.** Deliverable details must match
+  deliverable labels in count and in order; duplicate deliverable
+  labels and duplicate expert numbers are rejected; per-expert
+  requirements now require a leading number (`"Team 2"` no longer
+  parses as a 2.0 requirement).
+- **Section threshold no longer depends on exact capitalisation.**
+  A section headed `"Key Experts"` now gets the key-experts threshold
+  like `"KEY EXPERTS"` does, via a normalised flag on the section
+  instead of a string comparison in the generator.
+
+### Changed
+
+- **`validate` now builds the workbook in memory** (without writing
+  it), so "Valid" means the config will generate, not just that its
+  JSON has the right shape. An invalid sheet name, previously caught
+  only at generation time, is now also rejected at load time.
+- **Generated workbooks are sheet-protected** (no password). Input
+  cells are unlocked and formula/label cells locked, as the generator
+  already marked them; with protection previously off, those flags
+  changed nothing. Check the protected workbook in Excel on first
+  use — protection changes the editing experience.
+- **`menu` fails clearly when examples aren't installed.** A wheel
+  install does not ship the bundled examples; `menu` now says so and
+  asks for `--configs-dir` instead of failing on a nonsense path.
+  Bundled examples are still a checkout feature, not package data.
+- **Blank expert names remain allowed.** The bundled examples use
+  blank names for placeholder experts, so a blank name is a
+  legitimate placeholder; only non-string names are rejected. (This
+  corrects the review's initial suggestion to require names, which
+  would have broken the bundled examples.)
+- Previously accepted invalid configs are now rejected (see above).
+  No valid v2.0.0 config is affected: all bundled examples pass
+  unchanged.
+
 ## [2.0.0] - 2026-10-27
 
 Modernization of the original single-commit `mp-tech6` tool (2026-07-19),

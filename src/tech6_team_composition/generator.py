@@ -62,8 +62,13 @@ def parse_input_value(value: Any) -> float | str | None:
     text = str(value).strip().strip("[]").strip()
     if not text:
         return None
-    match = _NUMBER_RE.search(text)
-    if match and match.start() == 0:
+    # Thousands separators only count when the whole string is numeric
+    # ("1,000" -> 1000.0); "1,000 apples" still yields its leading 1.0
+    # below, matching the existing leading-number behaviour.
+    if re.fullmatch(r"[-+]?[\d,]+(?:\.\d+)?", text):
+        text = text.replace(",", "")
+    match = _NUMBER_RE.match(text)
+    if match:
         return float(match.group(0))
     return text
 
@@ -71,12 +76,14 @@ def parse_input_value(value: Any) -> float | str | None:
 def extract_threshold(text: str | None) -> float | None:
     """Extract the required total from text like ``"2.0 (1.0 Field)"``.
 
-    The first number in the string is the required total; the parenthetical
-    split is descriptive and is not parsed.
+    Only a LEADING number counts: ``"2.0 (1.0 Field / 1.0 Remote)"``
+    -> 2.0, and the parenthetical split is descriptive prose, not data.
+    A string whose first number appears later ("Team 2") yields None,
+    so it cannot silently become a requirement of 2.0.
     """
     if not text:
         return None
-    match = _NUMBER_RE.search(str(text))
+    match = _NUMBER_RE.match(str(text).strip())
     if match:
         return float(match.group(0))
     return None
@@ -121,14 +128,21 @@ class Tech6Generator:
     def from_config_file(cls, path: str | Path) -> Tech6Generator:
         return cls(load_config(path))
 
-    def resolve_output_path(self, output_dir: str | Path | None = None) -> Path:
+    def resolve_output_path(
+        self, output_dir: str | Path | None = None, output_filename: str | Path | None = None
+    ) -> Path:
         """Resolve where the workbook will be written.
 
         Precedence: explicit ``output_dir`` argument, then the config's
         ``output_directory``, then ``./output``. The output path is
-        refused if it would overwrite the config file itself.
+        refused if it would overwrite the config file itself. The
+        filename override is applied BEFORE that check: applying it
+        afterwards used to let ``--output-name`` point at the config
+        file and overwrite it with a workbook.
         """
-        filename = self.project_info.output_filename
+        filename = output_filename if output_filename is not None else self.project_info.output_filename
+        if Path(filename).name != str(filename):
+            raise ConfigError(f"output_filename must be a plain file name, got {filename!r}")
         if output_dir is not None:
             out_path = Path(output_dir) / filename
         elif self.config.output_directory is not None:
@@ -141,17 +155,13 @@ class Tech6Generator:
 
     def generate(self, output_dir: str | Path | None = None, output_filename: str | None = None) -> Path:
         """Build the workbook and save it, returning the output path."""
-        out_path = self.resolve_output_path(output_dir)
-        if output_filename is not None:
-            if Path(output_filename).name != output_filename:
-                raise ConfigError(f"output_filename must be a plain file name, got {output_filename!r}")
-            out_path = out_path.with_name(output_filename)
+        out_path = self.resolve_output_path(output_dir, output_filename)
         workbook = self.build_workbook()
         out_path.parent.mkdir(parents=True, exist_ok=True)
         try:
             workbook.save(out_path)
-        except PermissionError as exc:
-            raise ConfigError(f"Could not save to {out_path}. Close the file if it is open in Excel.") from exc
+        except OSError as exc:
+            raise ConfigError(f"Could not save to {out_path}. Close the file if it is open in Excel: {exc}") from exc
         logger.info("Saved: %s", out_path)
         return out_path
 
@@ -294,6 +304,11 @@ class Tech6Generator:
             for expert in section.experts:
                 curr_start_r = row_idx
                 expert_threshold = extract_threshold(expert.total_required_input)
+                if expert_threshold is not None and expert_threshold < 0:
+                    raise ConfigError(
+                        f"Expert {expert.n} total_required_input must not be negative, "
+                        f"got {expert.total_required_input!r}"
+                    )
 
                 for r in range(row_idx, row_idx + 2):
                     for c in range(1, self.last_col + 1):
@@ -361,7 +376,7 @@ class Tech6Generator:
 
                 if expert_threshold is not None:
                     self._apply_validation(ws, [c_total.coordinate], expert_threshold)
-                elif section.header == "KEY EXPERTS":
+                elif section.is_key_experts:
                     key_expert_total_cells.append(c_total.coordinate)
 
                 for c_idx in (self.col_n, self.col_name, self.col_pos):
@@ -393,7 +408,7 @@ class Tech6Generator:
                 if c >= self.col_home:
                     cell.alignment = Alignment(horizontal="center")
 
-            if section.header == "KEY EXPERTS" and key_expert_total_cells:
+            if section.is_key_experts and key_expert_total_cells:
                 self._apply_validation(ws, key_expert_total_cells, self.settings.validation_threshold)
             row_idx += 1
 
@@ -482,7 +497,11 @@ class Tech6Generator:
         ws.column_dimensions[get_column_letter(self.col_field)].width = 9
         ws.column_dimensions[get_column_letter(self.col_total)].width = 9
 
-        ws.protection.sheet = False
+        # Sheet protection ON: the generator marks input cells unlocked
+        # and formula/label cells locked, and those flags only mean
+        # anything with protection enabled. Without a password, so a
+        # proposal author can still unprotect it deliberately.
+        ws.protection.sheet = True
         ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
         ws.sheet_properties.pageSetUpPr = PageSetupProperties(fitToPage=True)
         ws.page_setup.fitToWidth = 1

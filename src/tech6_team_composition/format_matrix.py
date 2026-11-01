@@ -13,7 +13,9 @@ as formulas.
 
 from __future__ import annotations
 
+import datetime
 import logging
+import math
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -58,6 +60,11 @@ def get_bold_map(docx_path: str | Path) -> dict[tuple[str, int], list[str]]:
     for r_idx, row in enumerate(table.rows):
         if r_idx == 0:
             continue  # Header row.
+        if len(row.cells) < 2:
+            raise ValueError(
+                f"Reference document table row {r_idx} has fewer than 2 columns; "
+                "the expert name is expected in the second column"
+            )
         name = row.cells[1].text.strip()
         if not name:
             continue
@@ -95,7 +102,10 @@ def extract_matrix_data(
     if not path.exists():
         raise FileNotFoundError(f"Source workbook not found: {path}")
     workbook = openpyxl.load_workbook(path, data_only=False)
-    ws = workbook[sheet_name] if sheet_name else workbook.active
+    try:
+        ws = workbook[sheet_name] if sheet_name else workbook.active
+    except KeyError as exc:
+        raise ValueError(f"Worksheet {sheet_name!r} not found in {path}") from exc
     assert ws is not None
     max_row = ws.max_row
     max_col = ws.max_column
@@ -110,7 +120,9 @@ def extract_matrix_data(
         for c in range(1, max_col + 1):
             cell = ws.cell(row=r, column=c)
             val = cell.value
-            text = str(val or "").replace("<br>", "\n").strip()
+            # Not str(val or ""): a numeric 0 is falsy, and used to
+            # collapse to a blank cell here, losing the value entirely.
+            text = (str(val) if val is not None else "").replace("<br>", "\n").strip()
             text = _CONTROL_CHARS_RE.sub("", text)
             keywords: tuple[str, ...] = ()
             if r > 1:
@@ -176,6 +188,29 @@ def write_matrix(data_rows: list[list[MatrixCell]], output_path: str | Path) -> 
             "font_size": _FONT_SIZE,
         }
     )
+    # Dates need a date number format, or the serial number shows as a
+    # bare number when the file is read back.
+    fmt_std_date = workbook.add_format(
+        {
+            "border": 1,
+            "valign": "top",
+            "text_wrap": True,
+            "font_name": _FONT_NAME,
+            "font_size": _FONT_SIZE,
+            "num_format": "yyyy-mm-dd",
+        }
+    )
+    fmt_center_date = workbook.add_format(
+        {
+            "border": 1,
+            "align": "center",
+            "valign": "top",
+            "text_wrap": True,
+            "font_name": _FONT_NAME,
+            "font_size": _FONT_SIZE,
+            "num_format": "yyyy-mm-dd",
+        }
+    )
     fmt_std_part = workbook.add_format({"font_name": _FONT_NAME, "font_size": _FONT_SIZE})
     fmt_bold_part = workbook.add_format({"bold": True, "font_name": _FONT_NAME, "font_size": _FONT_SIZE})
     fmt_bold_cell_left = workbook.add_format(
@@ -237,6 +272,23 @@ def write_matrix(data_rows: list[list[MatrixCell]], output_path: str | Path) -> 
                 continue
             keywords = cell.keywords
             base_fmt = fmt_center if cell.is_center else fmt_std
+            # Numbers and dates keep their type. Previously every cell
+            # fell through to the text path below, so a numeric 2.5
+            # came back as the string "2.5" and any downstream SUM
+            # silently ignored it. Keywords only apply to text cells.
+            if isinstance(raw, bool):
+                worksheet.write_boolean(r_idx, c_idx, raw, base_fmt)
+                continue
+            if isinstance(raw, (int, float)) and math.isfinite(raw):
+                worksheet.write_number(r_idx, c_idx, raw, base_fmt)
+                continue
+            date_fmt = fmt_center_date if cell.is_center else fmt_std_date
+            if isinstance(raw, datetime.datetime):
+                worksheet.write_datetime(r_idx, c_idx, raw, date_fmt)
+                continue
+            if isinstance(raw, datetime.date):
+                worksheet.write_datetime(r_idx, c_idx, datetime.datetime(raw.year, raw.month, raw.day), date_fmt)
+                continue
             if keywords and val:
                 sorted_keywords = sorted(set(keywords), key=len, reverse=True)
                 pattern = r"(" + "|".join(re.escape(k) for k in sorted_keywords) + r")"

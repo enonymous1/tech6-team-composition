@@ -12,7 +12,7 @@ def test_cli_version(capsys):
     with pytest.raises(SystemExit) as exc_info:
         main(["--version"])
     assert exc_info.value.code == 0
-    assert "2.0.0" in capsys.readouterr().out
+    assert "2.1.0" in capsys.readouterr().out
 
 
 def test_cli_generate(examples_dir, tmp_path, capsys):
@@ -90,3 +90,75 @@ def test_module_entry_point(examples_dir, tmp_path):
     )
     assert result.returncode == 0, result.stderr
     assert "Valid:" in result.stdout
+
+
+def _bad_sheet_config(tmp_path, examples_dir):
+    import json
+    import shutil
+
+    config_path = tmp_path / "bad_sheet.json"
+    shutil.copy(examples_dir / "minimal.json", config_path)
+    data = json.loads(config_path.read_text(encoding="utf-8"))
+    data["project_info"]["sheet_name"] = "Bad/Name?"
+    config_path.write_text(json.dumps(data), encoding="utf-8")
+    return config_path
+
+
+def test_cli_generate_bad_sheet_name_is_clean_error(tmp_path, examples_dir, capsys):
+    config_path = _bad_sheet_config(tmp_path, examples_dir)
+    assert main(["generate", str(config_path), "--output-dir", str(tmp_path)]) == 2
+    err = capsys.readouterr().err
+    assert "Error:" in err
+    assert "Traceback" not in err
+
+
+def test_cli_validate_bad_sheet_name_is_clean_error(tmp_path, examples_dir, capsys):
+    config_path = _bad_sheet_config(tmp_path, examples_dir)
+    assert main(["validate", str(config_path)]) == 2
+    err = capsys.readouterr().err
+    assert "Error:" in err
+    assert "Traceback" not in err
+
+
+def test_cli_generate_directory_as_config_is_clean_error(tmp_path, capsys):
+    assert main(["generate", str(tmp_path), "--output-dir", str(tmp_path)]) == 2
+    err = capsys.readouterr().err
+    assert "Error:" in err
+    assert "Traceback" not in err
+
+
+def test_cli_format_matrix_missing_sheet_is_clean_error(examples_dir, tmp_path, capsys):
+    assert (
+        main(
+            [
+                "format-matrix",
+                "--input",
+                str(examples_dir / "qualifications_matrix.xlsx"),
+                "--output-dir",
+                str(tmp_path),
+                "--sheet",
+                "Nope",
+            ]
+        )
+        == 2
+    )
+    err = capsys.readouterr().err
+    assert "Error:" in err
+    assert "Traceback" not in err
+
+
+def test_cli_format_matrix_missing_input_creates_no_output_dir(tmp_path, capsys):
+    out_dir = tmp_path / "newdir"
+    assert main(["format-matrix", "--input", str(tmp_path / "missing.xlsx"), "--output-dir", str(out_dir)]) == 2
+    assert "Error:" in capsys.readouterr().err
+    assert not out_dir.exists()
+
+
+def test_cli_menu_without_bundled_examples_is_clean_error(tmp_path, monkeypatch, capsys):
+    import tech6_team_composition.cli as cli_module
+
+    monkeypatch.setattr(cli_module, "_default_configs_dir", lambda: tmp_path / "nope")
+    assert main(["menu"]) == 2
+    err = capsys.readouterr().err
+    assert "Bundled examples are not installed" in err
+    assert "Traceback" not in err

@@ -14,13 +14,16 @@ tech6-team-composition generate examples/validation.json
 # -> output/tech6_validation_example.xlsx
 ```
 
-Or pick a bundled example interactively:
+Or pick a bundled example interactively (from a checkout — an installed
+copy does not ship the examples, so pass `--configs-dir` there):
 
 ```bash
 tech6-team-composition menu
 ```
 
-Validate a config without writing anything:
+Validate a config without writing anything. This checks the schema
+and builds the workbook in memory, so a config that passes validation
+will generate:
 
 ```bash
 tech6-team-composition validate examples/full.json
@@ -30,8 +33,8 @@ tech6-team-composition validate examples/full.json
 
 | Command | What it does |
 |---|---|
-| `generate CONFIG [--output-dir DIR] [--output-name NAME]` | Build the TECH-6 workbook. Default output directory is `./output`. |
-| `validate CONFIG` | Check a config's schema and report its sections, experts, and deliverables. |
+| `generate CONFIG [--output-dir DIR] [--output-name NAME]` | Build the TECH-6 workbook. Default output directory is `./output`. Refuses to write over the config file. Generated workbooks are sheet-protected (no password); input cells are unlocked, formula cells locked. |
+| `validate CONFIG` | Check a config's schema, build the workbook in memory, and report its sections, experts, and deliverables. |
 | `format-matrix --input FILE [--input FILE ...] [--docx FILE] [--output-dir DIR]` | Reformat matrix workbook(s), writing `<name>_Formatted.xlsx`. |
 | `menu [--configs-dir DIR]` | Interactively choose a config and generate it. |
 
@@ -69,7 +72,9 @@ tech6-team-composition validate examples/full.json
 
 Rules the loader enforces:
 
-- `h_in` / `f_in` lists must match the number of `deliverable_labels`. Omit them for blank inputs.
+- `h_in` / `f_in` lists must match the number of `deliverable_labels`. Omit them for blank inputs. Entries must be strings, numbers, or null, and numbers must be finite and non-negative.
+- `sheet_name` must be a valid Excel sheet name (at most 31 characters, none of `[]:*?/\`).
+- `deliverable_details` must match `deliverable_labels` in count and order; duplicate labels and duplicate expert numbers are rejected. An expert name may be blank (placeholder experts in the bundled examples are blank); a non-string name is rejected.
 - Input values may be numbers, or bracketed proposal shorthand such as `"[2 month]"` or `"[0.5 m]"` — the leading number is used. Non-numeric text is kept as text; `SUM` ignores it.
 - `total_required_input` is a per-expert minimum, e.g. `"2.0 (1.0 Field / 1.0 Remote)"` — only the first number is the requirement. Experts without one fall back to the section `validation_threshold` (KEY EXPERTS only, default 6).
 - Grand totals are checked against `time_input_requirements` when present. If only total and field minimums are given, the home minimum is derived as total minus field.
@@ -84,7 +89,7 @@ tech6-team-composition format-matrix \
   --docx examples/qualifications_styles.docx
 ```
 
-The source matrix uses literal `<br>` separators, which become line breaks, and education/experience columns get bullet prefixes. Bold runs in the reference document's first table are re-applied to matching cells (matched by expert name and column). Without `--docx`, the matrix is reformatted without bold phrases.
+The source matrix uses literal `<br>` separators, which become line breaks, and education/experience columns get bullet prefixes. Bold runs in the reference document's first table are re-applied to matching cells (matched by expert name and column). Without `--docx`, the matrix is reformatted without bold phrases. Numbers and dates in the source keep their type in the output; formula cells are carried over as formulas.
 
 ## Bundled examples
 

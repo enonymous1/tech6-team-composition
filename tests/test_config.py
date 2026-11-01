@@ -147,3 +147,121 @@ def test_extra_project_info_fields_kept():
     config = parse_config(data)
     assert config.project_info.client == "Fictional Client"
     assert config.project_info.rfp_reference == "{Insert RFP reference}"
+
+
+def test_sheet_name_forbidden_characters_rejected():
+    data = _base_config()
+    data["project_info"]["sheet_name"] = "Bad/Name"
+    with pytest.raises(ConfigError, match="sheet_name"):
+        parse_config(data)
+
+
+def test_sheet_name_too_long_rejected():
+    data = _base_config()
+    data["project_info"]["sheet_name"] = "x" * 32
+    with pytest.raises(ConfigError, match="at most 31"):
+        parse_config(data)
+
+
+def test_deliverable_count_mismatch_rejected():
+    data = _base_config()
+    data["settings"]["deliverable_labels"] = ["D-1", "D-2", "D-3"]
+    with pytest.raises(ConfigError, match="counts must match"):
+        parse_config(data)
+
+
+def test_deliverable_id_mismatch_rejected():
+    data = _base_config()
+    data["deliverable_details"][1]["id"] = "D-9"
+    with pytest.raises(ConfigError, match="does not match"):
+        parse_config(data)
+
+
+def test_duplicate_deliverable_label_rejected():
+    data = _base_config()
+    data["settings"]["deliverable_labels"] = ["D-1", "D-1"]
+    with pytest.raises(ConfigError, match="Duplicate"):
+        parse_config(data)
+
+
+def test_duplicate_expert_number_rejected():
+    data = _base_config()
+    data["sections"][0]["experts"].append({"n": "K-1", "name": "Second Person", "position": "Deputy"})
+    with pytest.raises(ConfigError, match="Duplicate"):
+        parse_config(data)
+
+
+def test_negative_threshold_rejected():
+    data = _base_config()
+    data["settings"]["validation_threshold"] = -1
+    with pytest.raises(ConfigError, match="must not be negative"):
+        parse_config(data)
+
+
+def test_negative_minimum_rejected():
+    data = _base_config()
+    data["settings"]["time_input_requirements"] = {"total_minimum_months": -13.5}
+    with pytest.raises(ConfigError, match="must not be negative"):
+        parse_config(data)
+
+
+def test_negative_input_rejected():
+    data = _base_config()
+    data["sections"][0]["experts"][0]["h_in"] = [-1, 0]
+    with pytest.raises(ConfigError, match="must not be negative"):
+        parse_config(data)
+
+
+def test_bool_input_rejected():
+    data = _base_config()
+    data["sections"][0]["experts"][0]["h_in"] = [True, 0]
+    with pytest.raises(ConfigError, match="must be a string, number, or null"):
+        parse_config(data)
+
+
+def test_dict_input_rejected():
+    data = _base_config()
+    data["sections"][0]["experts"][0]["h_in"] = [{"months": 1}, 0]
+    with pytest.raises(ConfigError, match="must be a string, number, or null"):
+        parse_config(data)
+
+
+def test_non_finite_threshold_rejected():
+    data = _base_config()
+    data["settings"]["validation_threshold"] = float("nan")
+    with pytest.raises(ConfigError, match="finite"):
+        parse_config(data)
+
+
+def test_blank_expert_name_allowed():
+    # Bundled examples use blank names for placeholder experts; a blank
+    # name is a legitimate placeholder, a non-string name is not.
+    data = _base_config()
+    data["sections"][0]["experts"][0]["name"] = ""
+    config = parse_config(data)
+    assert config.sections[0].experts[0].name == ""
+    data["sections"][0]["experts"][0]["name"] = 42
+    with pytest.raises(ConfigError, match="'name' must be a string"):
+        parse_config(data)
+
+
+def test_key_experts_header_case_insensitive():
+    data = _base_config()
+    data["sections"][0]["header"] = "Key Experts"
+    config = parse_config(data)
+    assert config.sections[0].is_key_experts is True
+    data["sections"][0]["header"] = "NON-KEY EXPERTS"
+    config = parse_config(data)
+    assert config.sections[0].is_key_experts is False
+
+
+def test_load_directory_is_config_error(tmp_path):
+    with pytest.raises(ConfigError, match="Could not read"):
+        load_config(tmp_path)
+
+
+def test_load_non_utf8_config_is_config_error(tmp_path):
+    bad = tmp_path / "bad.json"
+    bad.write_bytes(b"\xff\xfe{not json")
+    with pytest.raises(ConfigError, match="not valid UTF-8"):
+        load_config(bad)

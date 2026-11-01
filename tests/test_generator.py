@@ -236,3 +236,70 @@ def test_page_setup_and_freeze(examples_dir):
     assert ws.sheet_properties.pageSetUpPr.fitToPage is True
     assert ws.page_setup.fitToWidth == 1
     assert ws.freeze_panes is not None
+
+
+def test_parse_input_value_thousands_separator():
+    assert parse_input_value("1,000") == 1000.0
+    assert parse_input_value("[1,000]") == 1000.0
+    assert parse_input_value("1,000.5") == 1000.5
+
+
+def test_extract_threshold_anchored_at_start():
+    assert extract_threshold("Team 2") is None
+    assert extract_threshold("2.0 (1.0 Field / 1.0 Remote)") == 2.0
+
+
+def _single_expert_config(**expert_overrides):
+    expert = {"n": "K-1", "name": "Jane Q. Expert", "position": "Team Leader"}
+    expert.update(expert_overrides)
+    return {
+        "project_info": {
+            "name": "Example",
+            "titles": ["T1", "T2", "T3"],
+            "sheet_name": "Team Input",
+            "output_filename": "out.xlsx",
+        },
+        "settings": {"deliverable_labels": ["D-1"], "validation_threshold": 6},
+        "sections": [{"header": "Key Experts", "experts": [expert]}],
+        "deliverable_details": [{"id": "D-1", "title": "One", "subtitle": "", "subtext": ""}],
+    }
+
+
+def test_case_variant_key_experts_section_gets_threshold():
+    from tech6_team_composition.config import parse_config
+
+    generator = Tech6Generator(parse_config(_single_expert_config()))
+    ws = generator.build_workbook().active
+    assert ws is not None
+    rules = _rules_by_range(ws)
+    assert any(
+        rule.operator == "lessThan" and rule.formula == ["6"] for rule_list in rules.values() for rule in rule_list
+    )
+
+
+def test_negative_per_expert_threshold_raises():
+    from tech6_team_composition.config import parse_config
+
+    generator = Tech6Generator(parse_config(_single_expert_config(total_required_input="-1.0")))
+    with pytest.raises(ConfigError, match="must not be negative"):
+        generator.build_workbook()
+
+
+def test_generate_output_name_refuses_to_overwrite_config(examples_dir, tmp_path):
+    import shutil
+
+    config_path = tmp_path / "cfg.json"
+    shutil.copy(examples_dir / "minimal.json", config_path)
+    generator = Tech6Generator.from_config_file(config_path)
+    with pytest.raises(ConfigError, match="Refusing to write output over the config"):
+        generator.generate(output_dir=tmp_path, output_filename="cfg.json")
+
+
+def test_sheet_protection_enabled_and_inputs_unlocked(examples_dir):
+    workbook, _ = _workbook_for(examples_dir, "validation.json")
+    ws = workbook.active
+    assert ws is not None
+    assert ws.protection.sheet is True
+    # A deliverable input cell is editable; a total formula cell is not.
+    assert ws["E8"].protection.locked is False
+    assert ws["K8"].protection.locked is True
